@@ -78,7 +78,7 @@ install_all_in_one() {
 
 install_prerequisites() {
   echo "Installing prerequisites..."
-  sudo apt update
+  sudo apt update </dev/null
   sudo apt install make unzip clang pkg-config lz4 libssl-dev build-essential git jq ncdu bsdmainutils htop -y <"/dev/null"
 
   # Add installation commands here
@@ -149,7 +149,7 @@ install_pm2() {
 }
 
 create_pm2_service() {
-sudo tee $INSTALLATION_DIR/ecosystem.config.js >/dev/null <<EOF
+  sudo tee $INSTALLATION_DIR/ecosystem.config.js >/dev/null <<EOF
 const { execSync } = require("child_process");
 
 const cosmovisorPath = execSync("which cosmovisor").toString().trim();
@@ -196,17 +196,17 @@ module.exports = {
 };
 EOF
 
-pm2 start $INSTALLATION_DIR/ecosystem.config.js
-if pm2 pid story; then
-  echo "Story is running"
-else
-  echo "Story is not running"
-fi
-if pm2 pid story-geth; then
-  echo "Story geth is running"
-else
-  echo "Story geth is not running"
-fi
+  pm2 start $INSTALLATION_DIR/ecosystem.config.js
+  if pm2 pid story; then
+    echo "Story is running"
+  else
+    echo "Story is not running"
+  fi
+  if pm2 pid story-geth; then
+    echo "Story geth is running"
+  else
+    echo "Story geth is not running"
+  fi
 }
 
 create_story_service() {
