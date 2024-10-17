@@ -22,8 +22,6 @@ get_story_version() {
 }
 
 select_option() {
-  STORY_VERSION=$(get_story_version)
-
   print_logo
   echo ""
   echo "Story Protocol Installer"
