@@ -111,11 +111,11 @@ install_story_and_geth() {
   story version
   story-geth version
 
-  read -p "Enter the moniker for your node (default: $MONIKER): " input_moniker
+  read -p "Enter the moniker for your node (default: ${MONIKER}): " input_moniker
   if [ -n "$input_moniker" ]; then
     MONIKER="$input_moniker"
   fi
-  echo "Using moniker: $MONIKER"
+  echo "Using moniker: ${MONIKER}"
 
   story init --network $CHAIN_ID --moniker $MONIKER
 }
@@ -171,7 +171,7 @@ install_using_cosmovisor() {
   fi
   cosmovisor version
 
-  cosmovisor DAEMON_NAME=$DAEMON_NAME DAEMON_HOME=$DAEMON_HOME cosmovisor init $(which story)
+  DAEMON_NAME=$DAEMON_NAME DAEMON_HOME=$DAEMON_HOME cosmovisor cosmovisor init $(which story)
 }
 
 install_using_pm2() {
@@ -203,10 +203,10 @@ module.exports = {
       name: "story",         
       script: cosmovisorPath,               
       args: "run start",                     
-      cwd: "$DAEMON_HOME",
+      cwd: "${DAEMON_HOME}",
       env: {
-        DAEMON_NAME: "$DAEMON_NAME",                
-        DAEMON_HOME: "$DAEMON_HOME",
+        DAEMON_NAME: "${DAEMON_NAME}",                
+        DAEMON_HOME: "${DAEMON_HOME}",
         UNSAFE_SKIP_BACKUP: "true",
         PATH: process.env.PATH               
       },
@@ -222,7 +222,7 @@ module.exports = {
       name: "story-geth",         
       script: gethPath,                
       args: "--iliad --syncmode full --http --http.addr 0.0.0.0 --http.port 8545 --ws --ws.addr 0.0.0.0 --ws.port 8546 --http.vhosts=*",                     
-      cwd: "$STORY_DIR/geth",  
+      cwd: "${STORY_DIR}/geth",  
       env: {
         PATH: process.env.PATH              
       },
@@ -240,14 +240,14 @@ EOF
 
   pm2 start $INSTALLATION_DIR/ecosystem.config.js
   if pm2 pid story; then
-    echo "Story is running"
+    echo -e "\e[32mStory is running\e[0m"
   else
-    echo "Story is not running"
+    echo -e "\e[31mStory is not running\e[0m"
   fi
   if pm2 pid story-geth; then
-    echo "Story geth is running"
+    echo -e "\e[32mStory geth is running\e[0m"
   else
-    echo "Story geth is not running"
+    echo -e "\e[31mStory geth is not running\e[0m"
   fi
 }
 
@@ -271,14 +271,14 @@ After=network-online.target
 [Service]
 User=$USER
 Type=simple
-WorkingDirectory=$DAEMON_HOME
+WorkingDirectory=${DAEMON_HOME}
 ExecStart=$(which cosmovisor) run start
 Restart=on-failure
 RestartSec=3
 LimitNOFILE=infinity
 LimitNPROC=infinity
-Environment="DAEMON_NAME=$DAEMON_NAME"
-Environment="DAEMON_HOME=$DAEMON_HOME"
+Environment="DAEMON_NAME=${DAEMON_NAME}"
+Environment="DAEMON_HOME=${DAEMON_HOME}"
 Environment="UNSAFE_SKIP_BACKUP=true"
 Environment="PATH=$PATH"
 
@@ -323,16 +323,16 @@ EOF
   sleep 5
   echo "Checking if Story Node is running..."
   if sudo systemctl is-active --quiet story.service; then
-    echo "Story Node is running."
+    echo -e "\e[32mStory Node is running.\e[0m"
   else
-    echo "Story Node is not running."
+    echo -e "\e[31mStory Node is not running.\e[0m"
   fi
 
   echo "Checking if Story Geth is running..."
   if sudo systemctl is-active --quiet story-geth.service; then
-    echo "Story Geth is running."
+    echo -e "\e[32mStory Geth is running.\e[0m"
   else
-    echo "Story Geth is not running."
+    echo -e "\e[31mStory Geth is not running.\e[0m"
   fi
 }
 
