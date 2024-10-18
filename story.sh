@@ -488,7 +488,9 @@ apply_snapshot() {
   echo_new_step "Applying snapshot"
   # Check if pv, lz4, and aria2 are installed, if not then install them
   for package in pv lz4 aria2; do
-    if ! command -v $package >/dev/null; then
+    binary=$package
+    [ "$package" = "aria2" ] && binary="aria2c"
+    if ! command -v $binary >/dev/null; then
       echo -e "${COLOR_YELLOW}$package is not installed. Installing...${COLOR_RESET}"
       sudo apt-get install -y $package
     fi
