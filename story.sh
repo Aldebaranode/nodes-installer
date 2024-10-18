@@ -421,6 +421,7 @@ install_using_pm2() {
   echo_new_step "Installing using pm2"
   install_all_in_one
   install_pm2
+  prompt_service_name
   create_pm2_service
   prompt_apply_snapshot
 }
@@ -429,6 +430,7 @@ install_default() {
   echo_new_step "Begin default installation"
   install_all_in_one
   install_using_cosmovisor
+  prompt_service_name
   create_story_service
   prompt_apply_snapshot
 }
@@ -446,7 +448,7 @@ apply_snapshot() {
     exit 1
   fi
   echo "Downloading snapshots simultaneously from ${COLOR_BLUE}${STORY_GETH_SNAPSHOT_URL}${COLOR_RESET} and ${COLOR_BLUE}${STORY_SNAPSHOT_URL}${COLOR_RESET}"
-  aria2c -x 16 -s 16 -k 1M $STORY_SNAPSHOT_URL $STORY_GETH_SNAPSHOT_URL
+  (echo $STORY_SNAPSHOT_URL; echo $STORY_GETH_SNAPSHOT_URL) | aria2c -x 16 -s 16 -k 1M -i -
 }
 
 prompt_apply_snapshot() {
