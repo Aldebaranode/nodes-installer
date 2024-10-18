@@ -12,11 +12,15 @@ STORY_SERVICE_NAME=$DAEMON_NAME
 
 DEFAULT_GETH_HTTP_PORT=8545
 DEFAULT_GETH_WS_PORT=8546
+DEFAULT_GETH_CLIENT_PORT=8551
+DEFAULT_GETH_P2P_PORT=30303
 DEFAULT_COMET_RPC_PORT=26657
 DEFAULT_COMET_P2P_PORT=26656
 DEFAULT_COMET_API_PORT=1317
 DEFAULT_COMET_GRPC_PORT=26658
 
+NEW_GETH_CLIENT_PORT=$DEFAULT_GETH_CLIENT_PORT
+NEW_GETH_P2P_PORT=$DEFAULT_GETH_P2P_PORT
 NEW_GETH_HTTP_PORT=$DEFAULT_GETH_HTTP_PORT
 NEW_GETH_WS_PORT=$DEFAULT_GETH_WS_PORT
 NEW_COMET_RPC_PORT=$DEFAULT_COMET_RPC_PORT
@@ -131,6 +135,8 @@ prompt_change_port() {
   fi
 
   declare -A ports=(
+    ["Geth Client port"]=$DEFAULT_GETH_CLIENT_PORT
+    ["Geth P2P port"]=$DEFAULT_GETH_P2P_PORT
     ["HTTP port"]=$DEFAULT_GETH_HTTP_PORT
     ["WebSocket port"]=$DEFAULT_GETH_WS_PORT
     ["RPC port"]=$DEFAULT_COMET_RPC_PORT
@@ -152,6 +158,8 @@ prompt_change_port() {
     done
   done
 
+  NEW_GETH_CLIENT_PORT=${ports["Geth Client port"]}
+  NEW_GETH_P2P_PORT=${ports["Geth P2P port"]}
   NEW_GETH_HTTP_PORT=${ports["HTTP port"]}
   NEW_GETH_WS_PORT=${ports["WebSocket port"]}
   NEW_COMET_RPC_PORT=${ports["RPC port"]}
@@ -186,6 +194,8 @@ prepare_configuration() {
   sed -i -e "s|:$DEFAULT_COMET_P2P_PORT\"|:$NEW_COMET_P2P_PORT\"|g" "$CONFIG_FILE"
   sed -i -e "s|:$DEFAULT_COMET_API_PORT\"|:$NEW_COMET_API_PORT\"|g" "$CONFIG_FILE"
   sed -i -e "s|:$DEFAULT_COMET_GRPC_PORT\"|:$NEW_COMET_GRPC_PORT\"|g" "$CONFIG_FILE"
+  # Update the engine-endpoint with the new client port
+  sed -i "s|http://localhost:$DEFAULT_GETH_CLIENT_PORT\"|http://localhost:$NEW_GETH_CLIENT_PORT\"|g" "$APP_CONFIG_FILE"
 
   echo -e "${COLOR_GREEN}Configuration updated successfully.${COLOR_RESET}"
 }
@@ -290,7 +300,7 @@ After=network-online.target
 
 [Service]
 User=$USER
-ExecStart=$(which story-geth) --iliad --syncmode full --http --http.addr 0.0.0.0 --http.port $NEW_GETH_HTTP_PORT --ws --ws.addr 0.0.0.0 --ws.port $NEW_GETH_WS_PORT --http.vhosts=* --datadir $STORY_DIR/geth/iliad
+ExecStart=$(which story-geth) --iliad --syncmode full --http --http.addr 0.0.0.0 --http.port $NEW_GETH_HTTP_PORT --ws --ws.addr 0.0.0.0 --ws.port $NEW_GETH_WS_PORT --http.vhosts=* --datadir $STORY_DIR/geth/iliad --port $NEW_GETH_P2P_PORT --discovery.port $NEW_GETH_P2P_PORT
 Restart=always
 RestartSec=3
 LimitNOFILE=infinity
@@ -362,7 +372,7 @@ module.exports = {
     {
       name: "${GETH_SERVICE_NAME}",         
       script: gethPath,                
-      args: "--iliad --syncmode full --http --http.addr 0.0.0.0 --http.port $NEW_GETH_HTTP_PORT --ws --ws.addr 0.0.0.0 --ws.port $NEW_GETH_WS_PORT --http.vhosts=* --datadir $STORY_DIR/geth/iliad",                     
+      args: "--iliad --syncmode full --http --http.addr 0.0.0.0 --http.port $NEW_GETH_HTTP_PORT --ws --ws.addr 0.0.0.0 --ws.port $NEW_GETH_WS_PORT --http.vhosts=* --datadir $STORY_DIR/geth/iliad --port $NEW_GETH_P2P_PORT --discovery.port $NEW_GETH_P2P_PORT",                     
       cwd: "${STORY_DIR}/geth",  
       env: {
         PATH: process.env.PATH              
