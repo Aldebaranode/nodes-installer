@@ -57,7 +57,6 @@ install_default() {
   install_all_in_one
   install_using_cosmovisor
   create_story_service
-  check_node_status
 }
 
 install_all_in_one() {
@@ -95,10 +94,10 @@ install_go() {
   wget https://dl.google.com/go/${GO_VERSION}.linux-amd64.tar.gz
   tar -C /usr/local -xzf ${GO_VERSION}.linux-amd64.tar.gz
   rm ${GO_VERSION}.linux-amd64.tar.gz
-  echo "export GOROOT=/usr/local/go" >>~/.profile
-  echo "export GOPATH=\$HOME/go" >>~/.profile
-  echo "export PATH=\$PATH:/usr/local/go/bin:\$HOME/go/bin" >>~/.profile
-  source ~/.profile
+  echo "export GOROOT=/usr/local/go" >>~/.bash_profile
+  echo "export GOPATH=\$HOME/go" >>~/.bash_profile
+  echo "export PATH=\$PATH:/usr/local/go/bin:\$HOME/go/bin" >>~/.bash_profile
+  source ~/.bash_profile
   echo "Go installation completed. Version: $(go version)"
 }
 
@@ -111,6 +110,14 @@ install_story_and_geth() {
 
   story version
   story-geth version
+
+  read -p "Enter the moniker for your node (default: $MONIKER): " input_moniker
+  if [ -n "$input_moniker" ]; then
+    MONIKER="$input_moniker"
+  fi
+  echo "Using moniker: $MONIKER"
+
+  story init --network $CHAIN_ID --moniker $MONIKER
 }
 
 download_story() {
