@@ -16,6 +16,10 @@ DEFAULT_COMET_GRPC_PORT=26658
 
 NEW_GETH_HTTP_PORT=$DEFAULT_GETH_HTTP_PORT
 NEW_GETH_WS_PORT=$DEFAULT_GETH_WS_PORT
+NEW_COMET_RPC_PORT=$DEFAULT_COMET_RPC_PORT
+NEW_COMET_P2P_PORT=$DEFAULT_COMET_P2P_PORT
+NEW_COMET_API_PORT=$DEFAULT_COMET_API_PORT
+NEW_COMET_GRPC_PORT=$DEFAULT_COMET_GRPC_PORT
 
 # Define color variables
 COLOR_GREEN="\e[32m"
@@ -136,7 +140,7 @@ prompt_change_port() {
     while true; do
       read -p "Enter the desired $port_description (default: ${ports[$port_description]}): " input_port
       input_port=${input_port:-${ports[$port_description]}}
-      if ! lsof -i :"$input_port" >/dev/null; then
+      if ! is_port_in_use "$input_port"; then
         ports[$port_description]=$input_port
         break
       else
@@ -147,8 +151,10 @@ prompt_change_port() {
 
   NEW_GETH_HTTP_PORT=${ports["HTTP port"]}
   NEW_GETH_WS_PORT=${ports["WebSocket port"]}
-
-  return $ports
+  NEW_COMET_RPC_PORT=${ports["RPC port"]}
+  NEW_COMET_P2P_PORT=${ports["P2P port"]}
+  NEW_COMET_API_PORT=${ports["API port"]}
+  NEW_COMET_GRPC_PORT=${ports["GRPC port"]}
 }
 
 prepare_configuration() {
@@ -173,11 +179,10 @@ prepare_configuration() {
   sed -i "s|^engine-jwt-file =.*|engine-jwt-file = \"${STORY_DIR}/geth/iliad/geth/jwtsecret\"|" "$APP_CONFIG_FILE"
 
   # Update the configuration file with the custom ports
-  ports=$(prompt_change_port)
-  sed -i -e "s|:$DEFAULT_COMET_RPC_PORT\"|:${ports["RPC port"]}\"|g" "$CONFIG_FILE"
-  sed -i -e "s|:$DEFAULT_COMET_P2P_PORT\"|:${ports["P2P port"]}\"|g" "$CONFIG_FILE"
-  sed -i -e "s|:$DEFAULT_COMET_API_PORT\"|:${ports["API port"]}\"|g" "$CONFIG_FILE"
-  sed -i -e "s|:$DEFAULT_COMET_GRPC_PORT\"|:${ports["GRPC port"]}\"|g" "$CONFIG_FILE"
+  sed -i -e "s|:$DEFAULT_COMET_RPC_PORT\"|:$NEW_COMET_RPC_PORT\"|g" "$CONFIG_FILE"
+  sed -i -e "s|:$DEFAULT_COMET_P2P_PORT\"|:$NEW_COMET_P2P_PORT\"|g" "$CONFIG_FILE"
+  sed -i -e "s|:$DEFAULT_COMET_API_PORT\"|:$NEW_COMET_API_PORT\"|g" "$CONFIG_FILE"
+  sed -i -e "s|:$DEFAULT_COMET_GRPC_PORT\"|:$NEW_COMET_GRPC_PORT\"|g" "$CONFIG_FILE"
 
   echo -e "${COLOR_GREEN}Configuration updated successfully.${COLOR_RESET}"
 }
