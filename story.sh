@@ -78,8 +78,8 @@ install_all_in_one() {
 
 install_prerequisites() {
   echo "Installing prerequisites..."
-  sudo apt update </dev/null
-  sudo apt install make unzip clang pkg-config lz4 libssl-dev build-essential git jq ncdu bsdmainutils htop -y <"/dev/null"
+  sudo apt update | tail -n 2
+  sudo apt install make unzip clang pkg-config lz4 libssl-dev build-essential git jq ncdu bsdmainutils htop -y | tail -n 2
 
   # Add installation commands here
   install_go
