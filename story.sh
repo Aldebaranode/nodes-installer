@@ -390,13 +390,62 @@ backup_config_files() {
   echo -e "${COLOR_GREEN}Backup completed successfully.${COLOR_RESET}"
 }
 
+restore_config_files() {
+  echo -e "${COLOR_YELLOW}Restoring configuration files...${COLOR_RESET}"
+  if [ -f "$STORY_DIR/priv_validator_state.json.backup" ]; then
+    cp $STORY_DIR/priv_validator_state.json.backup $STORY_DIR/story/data/priv_validator_state.json
+    echo -e "${COLOR_GREEN}Configuration files restored successfully.${COLOR_RESET}"
+  else
+    echo -e "${COLOR_RED}Backup file not found. Cannot restore configuration files.${COLOR_RESET}"
+  fi
+}
+
 remove_old_data() {
   echo -e "${COLOR_YELLOW}Removing old data...${COLOR_RESET}"
   rm -rf $STORY_DIR/story/data
   rm -rf $STORY_DIR/geth/iliad/geth/chaindata
-  rm -rf $DAEMON_HOME/data
   echo -e "${COLOR_GREEN}Old data removed successfully.${COLOR_RESET}"
 }
+
+stop_services() {
+  echo_new_step "Stopping services and pm2 processes"
+  if systemctl is-active --quiet ${GETH_SERVICE_NAME}.service; then
+    sudo systemctl stop ${GETH_SERVICE_NAME}.service
+  fi
+
+  if systemctl is-active --quiet ${STORY_SERVICE_NAME}.service; then
+    sudo systemctl stop ${STORY_SERVICE_NAME}.service
+  fi
+  if command -v pm2 >/dev/null; then
+    if pm2 list | grep -q $STORY_SERVICE_NAME; then
+      pm2 stop $STORY_SERVICE_NAME
+    fi
+    if pm2 list | grep -q $GETH_SERVICE_NAME; then
+      pm2 stop $GETH_SERVICE_NAME
+    fi
+  fi
+  echo -e "${COLOR_GREEN}Services processes stopped successfully.${COLOR_RESET}"
+}
+
+start_services() {
+  echo_new_step "Starting services"
+  if systemctl is-active --quiet ${GETH_SERVICE_NAME}.service; then
+    sudo systemctl start ${GETH_SERVICE_NAME}.service
+  fi
+  if systemctl is-active --quiet ${STORY_SERVICE_NAME}.service; then
+    sudo systemctl start ${STORY_SERVICE_NAME}.service
+  fi
+  if command -v pm2 >/dev/null; then
+    if pm2 list | grep -q $STORY_SERVICE_NAME; then
+      pm2 start $STORY_SERVICE_NAME
+    fi
+    if pm2 list | grep -q $GETH_SERVICE_NAME; then
+      pm2 start $GETH_SERVICE_NAME
+    fi
+  fi
+  echo -e "${COLOR_GREEN}Services started successfully.${COLOR_RESET}"
+}
+
 
 extract_snapshot() {
   echo_new_step "Extracting snapshot"
@@ -408,12 +457,12 @@ extract_snapshot() {
 
   # Extract the story snapshot
   echo -e "${COLOR_YELLOW}Extracting story snapshot...${COLOR_RESET}"
-  tar -xzvf story_snapshot.tar.gz -C $STORY_DIR/story/data
+  lz4 -d -c Story_snapshot.lz4 | pv | sudo tar xv -C $STORY_DIR/story/ > /dev/null
   echo -e "${COLOR_GREEN}Story snapshot extracted successfully.${COLOR_RESET}"
 
   # Extract the geth snapshot
   echo -e "${COLOR_YELLOW}Extracting geth snapshot...${COLOR_RESET}"
-  tar -xzvf geth_snapshot.tar.gz -C $STORY_DIR/geth/iliad/geth/chaindata
+  lz4 -d -c Geth_snapshot.lz4 | pv | sudo tar xv -C $STORY_DIR/geth/iliad/geth/ > /dev/null
   echo -e "${COLOR_GREEN}Geth snapshot extracted successfully.${COLOR_RESET}"
 }
 
@@ -449,6 +498,15 @@ apply_snapshot() {
   fi
   echo "Downloading snapshots simultaneously from ${COLOR_BLUE}${STORY_GETH_SNAPSHOT_URL}${COLOR_RESET} and ${COLOR_BLUE}${STORY_SNAPSHOT_URL}${COLOR_RESET}"
   (echo $STORY_SNAPSHOT_URL; echo $STORY_GETH_SNAPSHOT_URL) | aria2c -x 16 -s 16 -k 1M -i -
+
+  prompt_service_name
+
+  stop_services
+  backup_config_files
+  remove_old_data
+  extract_snapshot
+  restore_config_files
+  start_services
 }
 
 prompt_apply_snapshot() {
