@@ -21,6 +21,10 @@ get_story_version() {
   curl -s https://api.github.com/repos/piplabs/story/releases/latest | jq -r '.tag_name'
 }
 
+get_geth_version() {
+  curl -s https://api.github.com/repos/piplabs/story-geth/releases/latest | jq -r '.tag_name'
+}
+
 select_option() {
   print_logo
   echo ""
@@ -101,20 +105,41 @@ install_story_and_geth() {
   # Add installation commands here
 
   STORY_VERSION=$(get_story_version)
-  DOWNLOAD_URL="https://github.com/piplabs/story/archive/refs/tags/$STORY_VERSION.tar.gz"
+  STORY_NAME="story-linux-amd64-0.11.0-aac4bfe"
+  STORY_DOWNLOAD_URL="https://story-geth-binaries.s3.us-west-1.amazonaws.com/story-public/${STORY_NAME}.tar.gz"
+
+  wget $STORY_DOWNLOAD_URL
+  tar -xzvf $STORY_NAME.tar.gz
+  sudo chmod +x $STORY_NAME/story
+  sudo mv $STORY_NAME/story /usr/local/bin/
+
   wget $DOWNLOAD_URL
-  tar -xzvf $STORY_VERSION.tar.gz
+  tar -xzvf $STORY_VERSION.tar.gz -C $STORY_VERSION
   sudo chmod +x $STORY_VERSION/story
   sudo mv $STORY_VERSION/story /usr/local/bin/
   story version
 }
 
+download_geth() {
+  OS_TYPE=$(uname -s | tr '[:upper:]' '[:lower:]')
+  ARCH_TYPE=$(uname -m)
+
+  if [ "$ARCH_TYPE" = "x86_64" ]; then
+    ARCH_TYPE="amd64"
+  elif [ "$ARCH_TYPE" = "aarch64" ]; then
+    ARCH_TYPE="arm64"
+  fi
+
+  GETH_NAME="geth-${OS_TYPE}-${ARCH_TYPE}"
+  DOWNLOAD_URL="https://github.com/piplabs/story-geth/releases/download/v0.9.4/${GETH_NAME}"
+  sudo chmod +x $GETH_NAME
+  sudo mv $GETH_NAME /usr/local/bin/story-geth
+  story-geth version
+}
+
 install_using_cosmovisor() {
   echo "Installing using cosmovisor..."
-  if
-    ! command -v go &
-    >/dev/null
-  then
+  if ! command -v go >/dev/null; then
     read -p "Go is not installed. Do you want to install it? (y/n): " response
     if [ "$response" = "y" ]; then
       install_go
@@ -161,10 +186,10 @@ module.exports = {
       name: "story",         
       script: cosmovisorPath,               
       args: "run start",                     
-      cwd: "$DAEMON_HOME"
+      cwd: "$DAEMON_HOME",
       env: {
         DAEMON_NAME: "$DAEMON_NAME",                
-        DAEMON_HOME: "$DAEMON_HOME"
+        DAEMON_HOME: "$DAEMON_HOME",
         UNSAFE_SKIP_BACKUP: "true",
         PATH: process.env.PATH               
       },
@@ -174,7 +199,7 @@ module.exports = {
       instances: 1,                          
       exec_mode: "fork",                     
       max_open_files: "infinity",            
-      max_procs: "infinity",                 
+      max_procs: "infinity"                 
     },
     {
       name: "story-geth",         
@@ -190,7 +215,7 @@ module.exports = {
       instances: 1,                     
       exec_mode: "fork",               
       max_open_files: "infinity",     
-      max_procs: "infinity",         
+      max_procs: "infinity"         
     }
   ]
 };
@@ -210,18 +235,12 @@ EOF
 }
 
 create_story_service() {
-  if
-    ! command -v story &
-    >/dev/null
-  then
+  if ! command -v story >/dev/null; then
     echo "Story binary is not available. Please ensure it is installed correctly."
     exit 1
   fi
 
-  if
-    ! command -v story-geth &
-    >/dev/null
-  then
+  if ! command -v story-geth >/dev/null; then
     echo "Story-geth binary is not available. Please ensure it is installed correctly."
     exit 1
   fi
