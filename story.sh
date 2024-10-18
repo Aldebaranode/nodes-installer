@@ -290,7 +290,7 @@ After=network-online.target
 
 [Service]
 User=$USER
-ExecStart=$(which story-geth) --iliad --syncmode full --http --http.addr 0.0.0.0 --http.port $NEW_GETH_HTTP_PORT --ws --ws.addr 0.0.0.0 --ws.port $NEW_GETH_WS_PORT --http.vhosts=* --datadir $STORY_DIR/geth
+ExecStart=$(which story-geth) --iliad --syncmode full --http --http.addr 0.0.0.0 --http.port $NEW_GETH_HTTP_PORT --ws --ws.addr 0.0.0.0 --ws.port $NEW_GETH_WS_PORT --http.vhosts=* --datadir $STORY_DIR/geth/iliad
 Restart=always
 RestartSec=3
 LimitNOFILE=infinity
@@ -362,7 +362,7 @@ module.exports = {
     {
       name: "${GETH_SERVICE_NAME}",         
       script: gethPath,                
-      args: "--iliad --syncmode full --http --http.addr 0.0.0.0 --http.port $NEW_GETH_HTTP_PORT --ws --ws.addr 0.0.0.0 --ws.port $NEW_GETH_WS_PORT --http.vhosts=* --datadir $STORY_DIR/geth",                     
+      args: "--iliad --syncmode full --http --http.addr 0.0.0.0 --http.port $NEW_GETH_HTTP_PORT --ws --ws.addr 0.0.0.0 --ws.port $NEW_GETH_WS_PORT --http.vhosts=* --datadir $STORY_DIR/geth/iliad",                     
       cwd: "${STORY_DIR}/geth",  
       env: {
         PATH: process.env.PATH              
