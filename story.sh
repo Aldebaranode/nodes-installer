@@ -95,9 +95,9 @@ install_go() {
   wget https://dl.google.com/go/${GO_VERSION}.linux-amd64.tar.gz
   tar -C /usr/local -xzf ${GO_VERSION}.linux-amd64.tar.gz
   rm ${GO_VERSION}.linux-amd64.tar.gz
-  echo "export PATH=\$PATH:/usr/local/go/bin" >>~/.profile
   echo "export GOROOT=/usr/local/go" >>~/.profile
   echo "export GOPATH=\$HOME/go" >>~/.profile
+  echo "export PATH=\$PATH:/usr/local/go/bin:\$HOME/go/bin" >>~/.profile
   source ~/.profile
   echo "Go installation completed. Version: $(go version)"
 }
