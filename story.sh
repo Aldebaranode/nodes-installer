@@ -104,6 +104,14 @@ install_story_and_geth() {
   echo "Installing story & geth..."
   # Add installation commands here
 
+  download_story
+  download_geth
+
+  story version
+  story-geth version
+}
+
+download_story() {
   STORY_VERSION=$(get_story_version)
   STORY_NAME="story-linux-amd64-0.11.0-aac4bfe"
   STORY_DOWNLOAD_URL="https://story-geth-binaries.s3.us-west-1.amazonaws.com/story-public/${STORY_NAME}.tar.gz"
@@ -112,8 +120,6 @@ install_story_and_geth() {
   tar -xzvf $STORY_NAME.tar.gz
   sudo chmod +x $STORY_NAME/story
   sudo mv $STORY_NAME/story /usr/local/bin/
-
-  story version
 }
 
 download_geth() {
