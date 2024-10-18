@@ -94,6 +94,7 @@ is_port_in_use() {
 change_story_dir() {
   echo_new_step "Changing story directory"
   read -p "Enter the new directory for your story installation (current: ${STORY_DIR}): " new_story_dir
+  new_story_dir=$(eval echo "$new_story_dir")  # Expand variables like $HOME to their actual values
   if [ -n "$new_story_dir" ]; then
     STORY_DIR="$new_story_dir"
     DAEMON_HOME="$STORY_DIR/story"
@@ -397,6 +398,7 @@ install_using_pm2() {
   install_all_in_one
   install_pm2
   create_pm2_service
+  prompt_apply_snapshot
 }
 
 install_default() {
@@ -404,6 +406,7 @@ install_default() {
   install_all_in_one
   install_using_cosmovisor
   create_story_service
+  prompt_apply_snapshot
 }
 
 apply_snapshot() {
@@ -420,6 +423,15 @@ apply_snapshot() {
   fi
   echo "Downloading snapshots simultaneously from ${COLOR_BLUE}${STORY_GETH_SNAPSHOT_URL}${COLOR_RESET} and ${COLOR_BLUE}${STORY_SNAPSHOT_URL}${COLOR_RESET}"
   aria2c -x 16 -s 16 -k 2M $STORY_GETH_SNAPSHOT_URL $STORY_SNAPSHOT_URL
+}
+
+prompt_apply_snapshot() {
+  echo_new_step "Prompt to Apply Snapshot"
+  read -p "Do you want to apply a snapshot? (y/n): " apply_snapshot_choice
+  case $apply_snapshot_choice in
+    y|Y) apply_snapshot ;;
+    *) echo -e "${COLOR_YELLOW}Skipping snapshot application.${COLOR_RESET}" ;;
+  esac
 }
 
 select_option() {
