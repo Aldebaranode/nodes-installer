@@ -128,6 +128,7 @@ download_geth() {
 
   GETH_NAME="geth-${OS_TYPE}-${ARCH_TYPE}"
   DOWNLOAD_URL="https://github.com/piplabs/story-geth/releases/download/v0.9.4/${GETH_NAME}"
+  wget $DOWNLOAD_URL
   sudo chmod +x $GETH_NAME
   sudo mv $GETH_NAME /usr/local/bin/story-geth
   story-geth version
