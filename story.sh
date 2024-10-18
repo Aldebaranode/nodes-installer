@@ -113,10 +113,6 @@ install_story_and_geth() {
   sudo chmod +x $STORY_NAME/story
   sudo mv $STORY_NAME/story /usr/local/bin/
 
-  wget $DOWNLOAD_URL
-  tar -xzvf $STORY_VERSION.tar.gz -C $STORY_VERSION
-  sudo chmod +x $STORY_VERSION/story
-  sudo mv $STORY_VERSION/story /usr/local/bin/
   story version
 }
 
