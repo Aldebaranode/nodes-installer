@@ -91,6 +91,18 @@ is_port_in_use() {
   fi
 }
 
+change_story_dir() {
+  echo_new_step "Changing story directory"
+  read -p "Enter the new directory for your story installation (current: ${STORY_DIR}): " new_story_dir
+  if [ -n "$new_story_dir" ]; then
+    STORY_DIR="$new_story_dir"
+    DAEMON_HOME="$STORY_DIR/story"
+    echo -e "${COLOR_GREEN}Story directory changed to: ${STORY_DIR}${COLOR_RESET}"
+  else
+    echo -e "${COLOR_YELLOW}Story directory remains unchanged: ${STORY_DIR}${COLOR_RESET}"
+  fi
+}
+
 install_story_and_geth() {
   echo_new_step "Installing story & geth"
   download_story
@@ -100,7 +112,9 @@ install_story_and_geth() {
   read -p "Enter the moniker for your node (default: ${MONIKER}): " input_moniker
   [ -n "$input_moniker" ] && MONIKER="$input_moniker"
   echo -e "${COLOR_GREEN}Using moniker: ${MONIKER}${COLOR_RESET}"
-  story init --network $CHAIN_ID --moniker $MONIKER
+
+  change_story_dir
+  story init --network $CHAIN_ID --moniker $MONIKER --home $STORY_DIR
 }
 
 install_all_in_one() {
@@ -155,6 +169,12 @@ prompt_change_port() {
     ["api_port"]="API port for cometbft"
     ["grpc_port"]="GRPC port for cometbft"
   )
+
+  read -p "Do you want to change the default ports or use the default settings? (Enter 'y' to modify or 'n' to keep default ports): " change_ports
+  if [ "$change_ports" != "y" ]; then
+    echo -e "${COLOR_GREEN}Using default ports: HTTP port - ${default_ports["http_port"]}, WebSocket port - ${default_ports["ws_port"]}, RPC port - ${default_ports["rpc_port"]}, P2P port - ${default_ports["p2p_port"]}, API port - ${default_ports["api_port"]}, GRPC port - ${default_ports["grpc_port"]}.${COLOR_RESET}"
+    return
+  fi
 
   for port in "${!default_ports[@]}"; do
     while true; do
@@ -243,7 +263,7 @@ After=network-online.target
 
 [Service]
 User=$USER
-ExecStart=$(which story-geth) --iliad --syncmode full --http --http.addr 0.0.0.0 --http.port 8545 --ws --ws.addr 0.0.0.0 --ws.port 8546 --http.vhosts=*
+ExecStart=$(which story-geth) --iliad --syncmode full --http --http.addr 0.0.0.0 --http.port 8545 --ws --ws.addr 0.0.0.0 --ws.port 8546 --http.vhosts=* --datadir $STORY_DIR/geth
 Restart=always
 RestartSec=3
 LimitNOFILE=infinity
@@ -315,7 +335,7 @@ module.exports = {
     {
       name: "story-geth",         
       script: gethPath,                
-      args: "--iliad --syncmode full --http --http.addr 0.0.0.0 --http.port 8545 --ws --ws.addr 0.0.0.0 --ws.port 8546 --http.vhosts=*",                     
+      args: "--iliad --syncmode full --http --http.addr 0.0.0.0 --http.port 8545 --ws --ws.addr 0.0.0.0 --ws.port 8546 --http.vhosts=* --datadir $STORY_DIR/geth",                     
       cwd: "${STORY_DIR}/geth",  
       env: {
         PATH: process.env.PATH              
