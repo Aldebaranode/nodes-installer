@@ -1,4 +1,4 @@
-#!/bin/sh
+#Systemd !/bin/sh
 
 STORY_DIR="$HOME/.story"
 DAEMON_HOME="$STORY_DIR/story"
@@ -70,7 +70,7 @@ install_go() {
 install_prerequisites() {
   echo_new_step "Installing prerequisites"
   sudo apt update -q
-  sudo apt install -y -qq make unzip clang pkg-config lz4 libssl-dev build-essential git jq ncdu bsdmainutils htop aria2
+  sudo apt install -y -qq make unzip clang pkg-config lz4 libssl-dev build-essential git jq ncdu bsdmainutils htop aria2 pv
   install_go
 }
 
@@ -496,7 +496,7 @@ apply_snapshot() {
     echo -e "${COLOR_RED}Snapshot URL is unavailable. Exiting.${COLOR_RESET}"
     exit 1
   fi
-  echo "Downloading snapshots simultaneously from ${COLOR_BLUE}${STORY_GETH_SNAPSHOT_URL}${COLOR_RESET} and ${COLOR_BLUE}${STORY_SNAPSHOT_URL}${COLOR_RESET}"
+  echo -e "Downloading snapshots simultaneously from ${COLOR_BLUE}${STORY_GETH_SNAPSHOT_URL}${COLOR_RESET} and ${COLOR_BLUE}${STORY_SNAPSHOT_URL}${COLOR_RESET}"
   (echo $STORY_SNAPSHOT_URL; echo $STORY_GETH_SNAPSHOT_URL) | aria2c -x 16 -s 16 -k 1M -i -
 
   prompt_service_name
