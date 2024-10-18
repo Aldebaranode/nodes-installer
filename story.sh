@@ -5,31 +5,34 @@ DAEMON_HOME="$STORY_DIR/story"
 DAEMON_NAME="story"
 CHAIN_ID="iliad"
 MONIKER="Story Validator"
-
 INSTALLATION_DIR="$HOME/nodes-installer/story"
 
+# Define color variables
+COLOR_GREEN="\e[32m"
+COLOR_RED="\e[31m"
+COLOR_YELLOW="\e[33m"
+COLOR_BLUE="\e[34m"
+COLOR_RESET="\e[0m"
+
 print_logo() {
-  echo "  ___  _     _      _                                     _      "
-  echo " / _ \| |   | |    | |                                   | |     "
-  echo "/ /_\ \ | __| | ___| |__   __ _ _ __ __ _ _ __   ___   __| | ___ "
-  echo "|  _  | |/ _\` |/ _ \ '_ \ / _\` | '__/ _\` | '_ \ / _ \ / _\` |/ _ \\"
-  echo "| | | | | (_| |  __/ |_) | (_| | | | (_| | | | | (_) | (_| |  __/"
-  echo "\_| |_/_|\__,_|\___|_.__/ \__,_|_|  \__,_|_| |_|\___/ \__,_|\___|"
+  cat << "EOF"
+  ___  _     _      _                                     _      
+ / _ \| |   | |    | |                                   | |     
+/ /_\ \ | __| | ___| |__   __ _ _ __ __ _ _ __   ___   __| | ___ 
+|  _  | |/ _` |/ _ \ '_ \ / _` | '__/ _` | '_ \ / _ \ / _` |/ _ \
+| | | | | (_| |  __/ |_) | (_| | | | (_| | | | | (_) | (_| |  __/
+\_| |_/_|\__,_|\___|_.__/ \__,_|_|  \__,_|_| |_|\___/ \__,_|\___|
+EOF
 }
 
-get_story_version() {
-  curl -s https://api.github.com/repos/piplabs/story/releases/latest | jq -r '.tag_name'
-}
-
-get_geth_version() {
-  curl -s https://api.github.com/repos/piplabs/story-geth/releases/latest | jq -r '.tag_name'
+get_latest_version() {
+  local repo=$1
+  curl -s "https://api.github.com/repos/piplabs/$repo/releases/latest" | jq -r '.tag_name'
 }
 
 select_option() {
   print_logo
-  echo ""
-  echo "Story Protocol Installer"
-  echo ""
+  echo -e "${COLOR_BLUE}\nStory Protocol Installer\n${COLOR_RESET}"
   echo "Please select an option:"
   echo "1. Install (default: systemd)"
   echo "2. Install using pm2"
@@ -37,110 +40,83 @@ select_option() {
   read -p "Enter your choice [1-3]: " choice
 
   case $choice in
-  1)
-    install_default
-    ;;
-  2)
-    install_using_pm2
-    ;;
-  3)
-    apply_snapshot
-    ;;
-  *)
-    echo "Invalid option. Please try again."
-    ;;
+    1) install_default ;;
+    2) install_using_pm2 ;;
+    3) apply_snapshot ;;
+    *) echo -e "${COLOR_RED}Invalid option. Please try again.${COLOR_RESET}" ;;
   esac
 }
 
 install_default() {
-  echo "Begin default installation..."
+  echo_new_step "Begin default installation"
   install_all_in_one
   install_using_cosmovisor
   create_story_service
 }
 
 install_all_in_one() {
-  echo "Installing all components..."
-  if [ ! -d "$INSTALLATION_DIR" ]; then
-    mkdir -p "$INSTALLATION_DIR"
-  else
-    echo "Installation directory already exists."
+  echo_new_step "Installing all components"
+  [ ! -d "$INSTALLATION_DIR" ] && mkdir -p "$INSTALLATION_DIR" || {
+    echo -e "${COLOR_YELLOW}Installation directory already exists.${COLOR_RESET}"
     read -p "Do you want to delete and recreate it? (y/n): " response
-    if [ "$response" = "y" ]; then
-      rm -rf "$INSTALLATION_DIR"
-      mkdir -p "$INSTALLATION_DIR"
-      echo "Installation directory has been recreated."
-    else
-      echo "Using existing installation directory."
-    fi
-  fi
+    [ "$response" = "y" ] && rm -rf "$INSTALLATION_DIR" && mkdir -p "$INSTALLATION_DIR" && echo -e "${COLOR_GREEN}Installation directory has been recreated.${COLOR_RESET}"
+  }
   cd "$INSTALLATION_DIR"
   install_prerequisites
   install_story_and_geth
 }
 
 install_prerequisites() {
-  echo "Installing prerequisites..."
+  echo_new_step "Installing prerequisites"
   sudo apt update -q
-  sudo apt install make unzip clang pkg-config lz4 libssl-dev build-essential git jq ncdu bsdmainutils htop -y -qq
-
-  # Add installation commands here
+  sudo apt install -y -qq make unzip clang pkg-config lz4 libssl-dev build-essential git jq ncdu bsdmainutils htop
   install_go
 }
 
 install_go() {
-  echo "Installing the latest version of Go..."
-  GO_VERSION=$(curl https://go.dev/VERSION?m=text | head -n1)
-  wget https://dl.google.com/go/${GO_VERSION}.linux-amd64.tar.gz
-  tar -C /usr/local -xzf ${GO_VERSION}.linux-amd64.tar.gz
-  rm ${GO_VERSION}.linux-amd64.tar.gz
-  echo "export GOROOT=/usr/local/go" >>~/.profile
-  echo "export GOPATH=\$HOME/go" >>~/.profile
-  echo "export PATH=\$PATH:/usr/local/go/bin:\$HOME/go/bin" >>~/.profile
+  echo_new_step "Installing the latest version of Go"
+  GO_VERSION=$(curl -s https://go.dev/VERSION?m=text | head -n1)
+  wget "https://dl.google.com/go/${GO_VERSION}.linux-amd64.tar.gz"
+  sudo tar -C /usr/local -xzf "${GO_VERSION}.linux-amd64.tar.gz"
+  rm "${GO_VERSION}.linux-amd64.tar.gz"
+  {
+    echo "export GOROOT=/usr/local/go"
+    echo "export GOPATH=\$HOME/go"
+    echo "export PATH=\$PATH:/usr/local/go/bin:\$HOME/go/bin"
+  } >>~/.profile
   source ~/.profile
-  echo "Go installation completed. Version: $(go version)"
+  echo -e "${COLOR_GREEN}Go installation completed. Version: $(go version)${COLOR_RESET}"
 }
 
 install_story_and_geth() {
-  echo "Installing story & geth..."
-  # Add installation commands here
-
+  echo_new_step "Installing story & geth"
   download_story
   download_geth
-
   story version
   story-geth version
-
   read -p "Enter the moniker for your node (default: ${MONIKER}): " input_moniker
-  if [ -n "$input_moniker" ]; then
-    MONIKER="$input_moniker"
-  fi
-  echo "Using moniker: ${MONIKER}"
-
+  [ -n "$input_moniker" ] && MONIKER="$input_moniker"
+  echo -e "${COLOR_GREEN}Using moniker: ${MONIKER}${COLOR_RESET}"
   story init --network $CHAIN_ID --moniker $MONIKER
 }
 
 download_story() {
-  STORY_VERSION=$(get_story_version)
+  echo_new_step "Downloading story"
+  STORY_VERSION=$(get_latest_version "story")
   STORY_NAME="story-linux-amd64-0.11.0-aac4bfe"
   STORY_DOWNLOAD_URL="https://story-geth-binaries.s3.us-west-1.amazonaws.com/story-public/${STORY_NAME}.tar.gz"
-
   wget $STORY_DOWNLOAD_URL
-  tar -xzvf $STORY_NAME.tar.gz
-  sudo chmod +x $STORY_NAME/story
-  sudo mv $STORY_NAME/story /usr/local/bin/
+  tar -xzvf "${STORY_NAME}.tar.gz"
+  sudo chmod +x "${STORY_NAME}/story"
+  sudo mv "${STORY_NAME}/story" /usr/local/bin/
 }
 
 download_geth() {
+  echo_new_step "Downloading geth"
   OS_TYPE=$(uname -s | tr '[:upper:]' '[:lower:]')
   ARCH_TYPE=$(uname -m)
-
-  if [ "$ARCH_TYPE" = "x86_64" ]; then
-    ARCH_TYPE="amd64"
-  elif [ "$ARCH_TYPE" = "aarch64" ]; then
-    ARCH_TYPE="arm64"
-  fi
-
+  ARCH_TYPE=${ARCH_TYPE/x86_64/amd64}
+  ARCH_TYPE=${ARCH_TYPE/aarch64/arm64}
   GETH_NAME="geth-${OS_TYPE}-${ARCH_TYPE}"
   DOWNLOAD_URL="https://github.com/piplabs/story-geth/releases/download/v0.9.4/${GETH_NAME}"
   wget $DOWNLOAD_URL
@@ -150,48 +126,38 @@ download_geth() {
 }
 
 install_using_cosmovisor() {
-  echo "Installing using cosmovisor..."
+  echo_new_step "Installing using cosmovisor"
   if ! command -v go >/dev/null; then
     read -p "Go is not installed. Do you want to install it? (y/n): " response
-    if [ "$response" = "y" ]; then
-      install_go
-    else
-      echo "Go installation is required. Exiting script."
-      exit 1
-    fi
+    [ "$response" = "y" ] && install_go || { echo -e "${COLOR_RED}Go installation is required. Exiting script.${COLOR_RESET}"; exit 1; }
   else
-    echo "Go is already installed. Version: $(go version)"
+    echo -e "${COLOR_GREEN}Go is already installed. Version: $(go version)${COLOR_RESET}"
   fi
-
   go install cosmossdk.io/tools/cosmovisor/cmd/cosmovisor@latest
-
-  if ! command -v cosmovisor >/dev/null; then
-    echo "Cosmovisor is not installed. Exiting script."
-    exit 1
-  fi
+  command -v cosmovisor >/dev/null || { echo -e "${COLOR_RED}Cosmovisor is not installed. Exiting script.${COLOR_RESET}"; exit 1; }
   cosmovisor version
-
-  DAEMON_NAME=$DAEMON_NAME DAEMON_HOME=$DAEMON_HOME cosmovisor init $(which story)
+  DAEMON_NAME=$DAEMON_NAME DAEMON_HOME=$DAEMON_HOME cosmovisor init "$(which story)"
 }
 
 install_using_pm2() {
-  echo "Installing using pm2..."
+  echo_new_step "Installing using pm2"
   install_all_in_one
   install_pm2
   create_pm2_service
 }
 
 install_pm2() {
+  echo_new_step "Installing pm2"
   wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
   export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
-
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
   nvm install --lts
   npm install -g pm2
 }
 
 create_pm2_service() {
-  sudo tee $INSTALLATION_DIR/ecosystem.config.js >/dev/null <<EOF
+  echo_new_step "Creating pm2 service"
+  sudo tee "$INSTALLATION_DIR/ecosystem.config.js" >/dev/null <<EOF
 const { execSync } = require("child_process");
 
 const cosmovisorPath = execSync("which cosmovisor").toString().trim();
@@ -238,31 +204,17 @@ module.exports = {
 };
 EOF
 
-  pm2 start $INSTALLATION_DIR/ecosystem.config.js
-  if pm2 pid story; then
-    echo -e "\e[32mStory is running\e[0m"
-  else
-    echo -e "\e[31mStory is not running\e[0m"
-  fi
-  if pm2 pid story-geth; then
-    echo -e "\e[32mStory geth is running\e[0m"
-  else
-    echo -e "\e[31mStory geth is not running\e[0m"
-  fi
+  pm2 start "$INSTALLATION_DIR/ecosystem.config.js"
+  pm2 pid story && echo -e "${COLOR_GREEN}Story is running${COLOR_RESET}" || echo -e "${COLOR_RED}Story is not running${COLOR_RESET}"
+  pm2 pid story-geth && echo -e "${COLOR_GREEN}Story geth is running${COLOR_RESET}" || echo -e "${COLOR_RED}Story geth is not running${COLOR_RESET}"
 }
 
 create_story_service() {
-  if ! command -v story >/dev/null; then
-    echo "Story binary is not available. Please ensure it is installed correctly."
-    exit 1
-  fi
+  echo_new_step "Creating systemd service for Story Node"
+  command -v story >/dev/null || { echo -e "${COLOR_RED}Story binary is not available. Please ensure it is installed correctly.${COLOR_RESET}"; exit 1; }
+  command -v story-geth >/dev/null || { echo -e "${COLOR_RED}Story-geth binary is not available. Please ensure it is installed correctly.${COLOR_RESET}"; exit 1; }
 
-  if ! command -v story-geth >/dev/null; then
-    echo "Story-geth binary is not available. Please ensure it is installed correctly."
-    exit 1
-  fi
-
-  echo "Creating systemd service for Story Node..."
+  echo -e "${COLOR_YELLOW}Creating systemd service for Story Node...${COLOR_RESET}"
   sudo tee /etc/systemd/system/story.service >/dev/null <<EOF
 [Unit]
 Description=Cosmovisor Story Node
@@ -285,9 +237,9 @@ Environment="PATH=$PATH"
 [Install]
 WantedBy=multi-user.target
 EOF
-  echo "Systemd service for Story Node created successfully."
+  echo -e "${COLOR_GREEN}Systemd service for Story Node created successfully.${COLOR_RESET}"
 
-  echo "Creating systemd service for Story Geth..."
+  echo_new_step "Creating systemd service for Story Geth"
   sudo tee /etc/systemd/system/story-geth.service >/dev/null <<EOF
 [Unit]
 Description=Story execution daemon
@@ -305,36 +257,28 @@ Environment="PATH=$PATH"
 [Install]
 WantedBy=multi-user.target
 EOF
-  echo "Systemd service for Story Geth created successfully."
+  echo -e "${COLOR_GREEN}Systemd service for Story Geth created successfully.${COLOR_RESET}"
 
-  echo "Enabling and starting systemd services..."
-
-  # Enable the systemd services
+  echo_new_step "Enabling and starting systemd services"
   sudo systemctl enable story-geth.service
   sudo systemctl enable story.service
-
-  # Restart the systemd services
   sudo systemctl restart story-geth.service
   sudo systemctl restart story.service
 
-  echo "Systemd services enabled and restarted successfully."
+  echo -e "${COLOR_GREEN}Systemd services enabled and restarted successfully.${COLOR_RESET}"
 
-  echo "Checking node status..."
+  echo_new_step "Checking node status"
   sleep 5
-  echo "Checking if Story Node is running..."
-  if sudo systemctl is-active --quiet story.service; then
-    echo -e "\e[32mStory Node is running.\e[0m"
-  else
-    echo -e "\e[31mStory Node is not running.\e[0m"
-  fi
+  echo -e "${COLOR_YELLOW}Checking if Story Node is running...${COLOR_RESET}"
+  sudo systemctl is-active --quiet story.service && echo -e "${COLOR_GREEN}Story Node is running.${COLOR_RESET}" || echo -e "${COLOR_RED}Story Node is not running.${COLOR_RESET}"
 
-  echo "Checking if Story Geth is running..."
-  if sudo systemctl is-active --quiet story-geth.service; then
-    echo -e "\e[32mStory Geth is running.\e[0m"
-  else
-    echo -e "\e[31mStory Geth is not running.\e[0m"
-  fi
+  echo -e "${COLOR_YELLOW}Checking if Story Geth is running...${COLOR_RESET}"
+  sudo systemctl is-active --quiet story-geth.service && echo -e "${COLOR_GREEN}Story Geth is running.${COLOR_RESET}" || echo -e "${COLOR_RED}Story Geth is not running.${COLOR_RESET}"
 }
 
-# Call the function to start the selection process
+echo_new_step() {
+  local step_message=$1
+  echo -e "${COLOR_BLUE}=== ${step_message} ===${COLOR_RESET}"
+}
+
 select_option
