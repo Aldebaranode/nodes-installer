@@ -7,6 +7,9 @@ CHAIN_ID="iliad"
 MONIKER="Story Validator"
 INSTALLATION_DIR="$HOME/nodes-installer/story"
 
+GETH_SERVICE_NAME="story-geth"
+STORY_SERVICE_NAME=$DAEMON_NAME
+
 DEFAULT_GETH_HTTP_PORT=8545
 DEFAULT_GETH_WS_PORT=8546
 DEFAULT_COMET_RPC_PORT=26657
@@ -235,6 +238,14 @@ install_using_cosmovisor() {
   DAEMON_NAME=$DAEMON_NAME DAEMON_HOME=$DAEMON_HOME cosmovisor init "$(which story)"
 }
 
+prompt_service_name() {
+  read -p "Please enter the service name for Story Node [default: $STORY_SERVICE_NAME]: " input_story_service_name
+  STORY_SERVICE_NAME=${input_story_service_name:-$STORY_SERVICE_NAME}
+  
+  read -p "Please enter the service name for Story Geth [default: $GETH_SERVICE_NAME]: " input_geth_service_name
+  GETH_SERVICE_NAME=${input_geth_service_name:-$GETH_SERVICE_NAME}
+}
+
 create_story_service() {
   echo_new_step "Creating systemd service for Story Node"
   command -v story >/dev/null || {
@@ -247,7 +258,7 @@ create_story_service() {
   }
 
   echo -e "${COLOR_YELLOW}Creating systemd service for Story Node...${COLOR_RESET}"
-  sudo tee /etc/systemd/system/story.service >/dev/null <<EOF
+  sudo tee /etc/systemd/system/${STORY_SERVICE_NAME}.service >/dev/null <<EOF
 [Unit]
 Description=Cosmovisor Story Node
 After=network-online.target
@@ -272,7 +283,7 @@ EOF
   echo -e "${COLOR_GREEN}Systemd service for Story Node created successfully.${COLOR_RESET}"
 
   echo_new_step "Creating systemd service for Story Geth"
-  sudo tee /etc/systemd/system/story-geth.service >/dev/null <<EOF
+  sudo tee /etc/systemd/system/${GETH_SERVICE_NAME}.service >/dev/null <<EOF
 [Unit]
 Description=Story execution daemon
 After=network-online.target
@@ -330,7 +341,7 @@ const gethPath = execSync("which story-geth").toString().trim();
 module.exports = {
   apps: [
     {
-      name: "story",         
+      name: "${STORY_SERVICE_NAME}",         
       script: cosmovisorPath,               
       args: "run run",                     
       cwd: "${DAEMON_HOME}",
@@ -349,7 +360,7 @@ module.exports = {
       max_procs: "infinity"                 
     },
     {
-      name: "story-geth",         
+      name: "${GETH_SERVICE_NAME}",         
       script: gethPath,                
       args: "--iliad --syncmode full --http --http.addr 0.0.0.0 --http.port $NEW_GETH_HTTP_PORT --ws --ws.addr 0.0.0.0 --ws.port $NEW_GETH_WS_PORT --http.vhosts=* --datadir $STORY_DIR/geth",                     
       cwd: "${STORY_DIR}/geth",  
@@ -435,7 +446,7 @@ apply_snapshot() {
     exit 1
   fi
   echo "Downloading snapshots simultaneously from ${COLOR_BLUE}${STORY_GETH_SNAPSHOT_URL}${COLOR_RESET} and ${COLOR_BLUE}${STORY_SNAPSHOT_URL}${COLOR_RESET}"
-  aria2c -x 16 -s 16 -k 2M $STORY_GETH_SNAPSHOT_URL $STORY_SNAPSHOT_URL
+  aria2c -x 16 -s 16 -k 1M $STORY_SNAPSHOT_URL $STORY_GETH_SNAPSHOT_URL
 }
 
 prompt_apply_snapshot() {
