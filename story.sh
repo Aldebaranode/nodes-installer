@@ -202,7 +202,7 @@ module.exports = {
     {
       name: "story",         
       script: cosmovisorPath,               
-      args: "run start",                     
+      args: "run run",                     
       cwd: "${DAEMON_HOME}",
       env: {
         DAEMON_NAME: "${DAEMON_NAME}",                
@@ -272,7 +272,7 @@ After=network-online.target
 User=$USER
 Type=simple
 WorkingDirectory=${DAEMON_HOME}
-ExecStart=$(which cosmovisor) run start
+ExecStart=$(which cosmovisor) run run
 Restart=on-failure
 RestartSec=3
 LimitNOFILE=infinity
