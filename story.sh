@@ -182,13 +182,14 @@ prompt_change_port() {
 
   config_files=(
     "$INSTALLATION_DIR/ecosystem.config.js"
-    "/etc/system/systemd/story-geth.service"
+    "/etc/systemd/system/story-geth.service"
   )
 
   for config_file in "${config_files[@]}"; do
     if [ -f "$config_file" ]; then
       sed -i -e "s|--http.port 8545|--http.port $http_port|g" "$config_file"
       sed -i -e "s|--ws.port 8546|--ws.port $ws_port|g" "$config_file"
+      echo -e "${COLOR_GREEN}Update of HTTP and WebSocket ports in $(basename "$config_file") completed.${COLOR_RESET}"
     else
       echo -e "${COLOR_RED}File $config_file not found. Skipping port configuration.${COLOR_RESET}"
     fi
