@@ -7,6 +7,16 @@ CHAIN_ID="iliad"
 MONIKER="Story Validator"
 INSTALLATION_DIR="$HOME/nodes-installer/story"
 
+DEFAULT_GETH_HTTP_PORT=8545
+DEFAULT_GETH_WS_PORT=8546
+DEFAULT_COMET_RPC_PORT=26657
+DEFAULT_COMET_P2P_PORT=26656
+DEFAULT_COMET_API_PORT=1317
+DEFAULT_COMET_GRPC_PORT=26658
+
+NEW_GETH_HTTP_PORT=$DEFAULT_GETH_HTTP_PORT
+NEW_GETH_WS_PORT=$DEFAULT_GETH_WS_PORT
+
 # Define color variables
 COLOR_GREEN="\e[32m"
 COLOR_RED="\e[31m"
@@ -104,6 +114,75 @@ change_story_dir() {
   fi
 }
 
+prompt_change_port() {
+  echo_new_step "Configuring custom ports"
+
+  read -p "Do you want to change the default ports or use the default settings? (Enter 'y' to modify or 'n' to keep default ports): " change_ports
+  if [ "$change_ports" != "y" ]; then
+    echo -e "${COLOR_GREEN}Using default ports: HTTP port - $DEFAULT_GETH_HTTP_PORT, WebSocket port - $DEFAULT_GETH_WS_PORT, RPC port - $DEFAULT_COMET_RPC_PORT, P2P port - $DEFAULT_COMET_P2P_PORT, API port - $DEFAULT_COMET_API_PORT, GRPC port - $DEFAULT_COMET_GRPC_PORT.${COLOR_RESET}"
+    return
+  fi
+
+  declare -A ports=(
+    ["HTTP port"]=$DEFAULT_GETH_HTTP_PORT
+    ["WebSocket port"]=$DEFAULT_GETH_WS_PORT
+    ["RPC port"]=$DEFAULT_COMET_RPC_PORT
+    ["P2P port"]=$DEFAULT_COMET_P2P_PORT
+    ["API port"]=$DEFAULT_COMET_API_PORT
+    ["GRPC port"]=$DEFAULT_COMET_GRPC_PORT
+  )
+
+  for port_description in "${!ports[@]}"; do
+    while true; do
+      read -p "Enter the desired $port_description (default: ${ports[$port_description]}): " input_port
+      input_port=${input_port:-${ports[$port_description]}}
+      if ! lsof -i :"$input_port" >/dev/null; then
+        ports[$port_description]=$input_port
+        break
+      else
+        echo -e "${COLOR_RED}Port $input_port is already in use. Please choose a different port.${COLOR_RESET}"
+      fi
+    done
+  done
+
+  NEW_GETH_HTTP_PORT=${ports["HTTP port"]}
+  NEW_GETH_WS_PORT=${ports["WebSocket port"]}
+
+  return $ports
+}
+
+prepare_configuration() {
+  echo_new_step "Preparing configuration"
+  
+  # Check if the configuration file exists
+  CONFIG_FILE="$DAEMON_HOME/config/config.toml"
+  if [ ! -f "$CONFIG_FILE" ]; then
+    echo -e "${COLOR_RED}Configuration file not found at $CONFIG_FILE. Exiting.${COLOR_RESET}"
+    exit 1
+  fi
+  APP_CONFIG_FILE="$DAEMON_HOME/config/story.toml"
+  if [ ! -f "$APP_CONFIG_FILE" ]; then
+    echo -e "${COLOR_RED}App configuration file not found at $APP_CONFIG_FILE. Exiting.${COLOR_RESET}"
+    exit 1
+  fi
+
+  # Update the configuration file with custom settings
+  echo -e "${COLOR_YELLOW}Updating configuration file...${COLOR_RESET}"
+  
+  # Set the engine JWT file path
+  sed -i "s|^engine-jwt-file =.*|engine-jwt-file = \"${STORY_DIR}/geth/iliad/geth/jwtsecret\"|" "$APP_CONFIG_FILE"
+
+  # Update the configuration file with the custom ports
+  ports=$(prompt_change_port)
+  sed -i -e "s|:$DEFAULT_COMET_RPC_PORT\"|:${ports["RPC port"]}\"|g" "$CONFIG_FILE"
+  sed -i -e "s|:$DEFAULT_COMET_P2P_PORT\"|:${ports["P2P port"]}\"|g" "$CONFIG_FILE"
+  sed -i -e "s|:$DEFAULT_COMET_API_PORT\"|:${ports["API port"]}\"|g" "$CONFIG_FILE"
+  sed -i -e "s|:$DEFAULT_COMET_GRPC_PORT\"|:${ports["GRPC port"]}\"|g" "$CONFIG_FILE"
+
+  echo -e "${COLOR_GREEN}Configuration updated successfully.${COLOR_RESET}"
+}
+
+
 install_story_and_geth() {
   echo_new_step "Installing story & geth"
   download_story
@@ -115,7 +194,8 @@ install_story_and_geth() {
   echo -e "${COLOR_GREEN}Using moniker: ${MONIKER}${COLOR_RESET}"
 
   change_story_dir
-  story init --network $CHAIN_ID --moniker $MONIKER --home $STORY_DIR
+  story init --network $CHAIN_ID --moniker $MONIKER --home $DAEMON_HOME
+  prepare_configuration
 }
 
 install_all_in_one() {
@@ -148,76 +228,6 @@ install_using_cosmovisor() {
   }
   cosmovisor version
   DAEMON_NAME=$DAEMON_NAME DAEMON_HOME=$DAEMON_HOME cosmovisor init "$(which story)"
-}
-
-prompt_change_port() {
-  echo_new_step "Configuring custom ports"
-
-  declare -A default_ports=(
-    ["http_port"]=8545
-    ["ws_port"]=8546
-    ["rpc_port"]=26657
-    ["p2p_port"]=26656
-    ["api_port"]=1317
-    ["grpc_port"]=26658
-  )
-
-  declare -A port_descriptions=(
-    ["http_port"]="HTTP port for story-geth"
-    ["ws_port"]="WebSocket port for story-geth"
-    ["rpc_port"]="RPC port for cometbft"
-    ["p2p_port"]="P2P port for cometbft"
-    ["api_port"]="API port for cometbft"
-    ["grpc_port"]="GRPC port for cometbft"
-  )
-
-  read -p "Do you want to change the default ports or use the default settings? (Enter 'y' to modify or 'n' to keep default ports): " change_ports
-  if [ "$change_ports" != "y" ]; then
-    echo -e "${COLOR_GREEN}Using default ports: HTTP port - ${default_ports["http_port"]}, WebSocket port - ${default_ports["ws_port"]}, RPC port - ${default_ports["rpc_port"]}, P2P port - ${default_ports["p2p_port"]}, API port - ${default_ports["api_port"]}, GRPC port - ${default_ports["grpc_port"]}.${COLOR_RESET}"
-    return
-  fi
-
-  for port in "${!default_ports[@]}"; do
-    while true; do
-      read -p "Enter the desired ${port_descriptions[$port]} (default: ${default_ports[$port]}): " input_port
-      input_port=${input_port:-${default_ports[$port]}}
-      if ! lsof -i :"$input_port" >/dev/null; then
-        eval "$port=$input_port"
-        break
-      else
-        echo -e "${COLOR_RED}Port $input_port is already in use. Please choose a different port.${COLOR_RESET}"
-      fi
-    done
-    eval "$port=${input_port:-${default_ports[$port]}}"
-  done
-
-  declare -A port_mappings=(
-    ["26656"]="$p2p_port"
-    ["1317"]="$api_port"
-    ["26658"]="$grpc_port"
-    ["26657"]="$rpc_port"
-  )
-
-  for key in "${!port_mappings[@]}"; do
-    sed -i -e "s|:$key\"|:${port_mappings[$key]}\"|g" "$DAEMON_HOME/config/config.toml"
-  done
-
-  config_files=(
-    "$INSTALLATION_DIR/ecosystem.config.js"
-    "/etc/systemd/system/story-geth.service"
-  )
-
-  for config_file in "${config_files[@]}"; do
-    if [ -f "$config_file" ]; then
-      sed -i -e "s|--http.port 8545|--http.port $http_port|g" "$config_file"
-      sed -i -e "s|--ws.port 8546|--ws.port $ws_port|g" "$config_file"
-      echo -e "${COLOR_GREEN}Update of HTTP and WebSocket ports in $(basename "$config_file") completed.${COLOR_RESET}"
-    else
-      echo -e "${COLOR_RED}File $config_file not found. Skipping port configuration on this file.${COLOR_RESET}"
-    fi
-  done
-
-  echo -e "${COLOR_GREEN}Ports configured: P2P port - $p2p_port, API port - $api_port, GRPC port - $grpc_port, RPC port - $rpc_port, HTTP port - $http_port, WebSocket port - $ws_port${COLOR_RESET}"
 }
 
 create_story_service() {
@@ -264,7 +274,7 @@ After=network-online.target
 
 [Service]
 User=$USER
-ExecStart=$(which story-geth) --iliad --syncmode full --http --http.addr 0.0.0.0 --http.port 8545 --ws --ws.addr 0.0.0.0 --ws.port 8546 --http.vhosts=* --datadir $STORY_DIR/geth
+ExecStart=$(which story-geth) --iliad --syncmode full --http --http.addr 0.0.0.0 --http.port $NEW_GETH_HTTP_PORT --ws --ws.addr 0.0.0.0 --ws.port $NEW_GETH_WS_PORT --http.vhosts=* --datadir $STORY_DIR/geth
 Restart=always
 RestartSec=3
 LimitNOFILE=infinity
@@ -336,7 +346,7 @@ module.exports = {
     {
       name: "story-geth",         
       script: gethPath,                
-      args: "--iliad --syncmode full --http --http.addr 0.0.0.0 --http.port 8545 --ws --ws.addr 0.0.0.0 --ws.port 8546 --http.vhosts=* --datadir $STORY_DIR/geth",                     
+      args: "--iliad --syncmode full --http --http.addr 0.0.0.0 --http.port $NEW_GETH_HTTP_PORT --ws --ws.addr 0.0.0.0 --ws.port $NEW_GETH_WS_PORT --http.vhosts=* --datadir $STORY_DIR/geth",                     
       cwd: "${STORY_DIR}/geth",  
       env: {
         PATH: process.env.PATH              
@@ -352,8 +362,6 @@ module.exports = {
   ]
 };
 EOF
-
-  prompt_change_port
 
   pm2 start "$INSTALLATION_DIR/ecosystem.config.js"
   pm2 pid story && echo -e "${COLOR_GREEN}Story is running${COLOR_RESET}" || echo -e "${COLOR_RED}Story is not running${COLOR_RESET}"
