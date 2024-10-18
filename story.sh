@@ -96,6 +96,8 @@ install_go() {
   tar -C /usr/local -xzf ${GO_VERSION}.linux-amd64.tar.gz
   rm ${GO_VERSION}.linux-amd64.tar.gz
   echo "export PATH=\$PATH:/usr/local/go/bin" >>~/.profile
+  echo "export GOROOT=/usr/local/go" >>~/.profile
+  echo "export GOPATH=\$HOME/go" >>~/.profile
   source ~/.profile
   echo "Go installation completed. Version: $(go version)"
 }
@@ -155,6 +157,11 @@ install_using_cosmovisor() {
   fi
 
   go install cosmossdk.io/tools/cosmovisor/cmd/cosmovisor@latest
+
+  if ! command -v cosmovisor >/dev/null; then
+    echo "Cosmovisor is not installed. Exiting script."
+    exit 1
+  fi
   cosmovisor version
 
   cosmovisor DAEMON_NAME=$DAEMON_NAME DAEMON_HOME=$DAEMON_HOME cosmovisor init $(which story)
@@ -279,7 +286,7 @@ Description=Story execution daemon
 After=network-online.target
 
 [Service]
-User=aldebaranode
+User=$USER
 ExecStart=$(which story-geth) --iliad --syncmode full --http --http.addr 0.0.0.0 --http.port 8545 --ws --ws.addr 0.0.0.0 --ws.port 8546 --http.vhosts=*
 Restart=always
 RestartSec=3
