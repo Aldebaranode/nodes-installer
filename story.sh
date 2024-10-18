@@ -91,7 +91,7 @@ install_prerequisites() {
 
 install_go() {
   echo "Installing the latest version of Go..."
-  GO_VERSION=$(curl -s https://golang.org/VERSION?m=text)
+  GO_VERSION=$(curl https://go.dev/VERSION?m=text | head -n1)
   wget https://dl.google.com/go/${GO_VERSION}.linux-amd64.tar.gz
   tar -C /usr/local -xzf ${GO_VERSION}.linux-amd64.tar.gz
   rm ${GO_VERSION}.linux-amd64.tar.gz
