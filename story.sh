@@ -171,7 +171,7 @@ install_using_cosmovisor() {
   fi
   cosmovisor version
 
-  DAEMON_NAME=$DAEMON_NAME DAEMON_HOME=$DAEMON_HOME cosmovisor cosmovisor init $(which story)
+  DAEMON_NAME=$DAEMON_NAME DAEMON_HOME=$DAEMON_HOME cosmovisor init $(which story)
 }
 
 install_using_pm2() {
