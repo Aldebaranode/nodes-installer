@@ -305,20 +305,20 @@ EOF
   prompt_change_port
 
   echo_new_step "Enabling and starting systemd services"
-  sudo systemctl enable story-geth.service
-  sudo systemctl enable story.service
-  sudo systemctl restart story-geth.service
-  sudo systemctl restart story.service
+  sudo systemctl enable ${GETH_SERVICE_NAME}.service
+  sudo systemctl enable ${STORY_SERVICE_NAME}.service
+  sudo systemctl restart ${GETH_SERVICE_NAME}.service
+  sudo systemctl restart ${STORY_SERVICE_NAME}.service
 
   echo -e "${COLOR_GREEN}Systemd services enabled and restarted successfully.${COLOR_RESET}"
 
   echo_new_step "Checking node status"
   sleep 5
   echo -e "${COLOR_YELLOW}Checking if Story Node is running...${COLOR_RESET}"
-  sudo systemctl is-active --quiet story.service && echo -e "${COLOR_GREEN}Story Node is running.${COLOR_RESET}" || echo -e "${COLOR_RED}Story Node is not running.${COLOR_RESET}"
+  sudo systemctl is-active --quiet $STORY_SERVICE_NAME.service && echo -e "${COLOR_GREEN}Story Node is running.${COLOR_RESET}" || echo -e "${COLOR_RED}Story Node is not running.${COLOR_RESET}"
 
   echo -e "${COLOR_YELLOW}Checking if Story Geth is running...${COLOR_RESET}"
-  sudo systemctl is-active --quiet story-geth.service && echo -e "${COLOR_GREEN}Story Geth is running.${COLOR_RESET}" || echo -e "${COLOR_RED}Story Geth is not running.${COLOR_RESET}"
+  sudo systemctl is-active --quiet $GETH_SERVICE_NAME.service && echo -e "${COLOR_GREEN}Story Geth is running.${COLOR_RESET}" || echo -e "${COLOR_RED}Story Geth is not running.${COLOR_RESET}"
 }
 
 install_pm2() {
@@ -380,8 +380,8 @@ module.exports = {
 EOF
 
   pm2 start "$INSTALLATION_DIR/ecosystem.config.js"
-  pm2 pid story && echo -e "${COLOR_GREEN}Story is running${COLOR_RESET}" || echo -e "${COLOR_RED}Story is not running${COLOR_RESET}"
-  pm2 pid story-geth && echo -e "${COLOR_GREEN}Story geth is running${COLOR_RESET}" || echo -e "${COLOR_RED}Story geth is not running${COLOR_RESET}"
+  pm2 pid $STORY_SERVICE_NAME && echo -e "${COLOR_GREEN}Story is running${COLOR_RESET}" || echo -e "${COLOR_RED}Story is not running${COLOR_RESET}"
+  pm2 pid $GETH_SERVICE_NAME && echo -e "${COLOR_GREEN}Story geth is running${COLOR_RESET}" || echo -e "${COLOR_RED}Story geth is not running${COLOR_RESET}"
 }
 
 backup_config_files() {
