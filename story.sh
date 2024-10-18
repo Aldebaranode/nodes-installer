@@ -192,9 +192,10 @@ prepare_configuration() {
   # Update the configuration file with the custom ports
   sed -i -e "s|:$DEFAULT_COMET_RPC_PORT\"|:$NEW_COMET_RPC_PORT\"|g" "$CONFIG_FILE"
   sed -i -e "s|:$DEFAULT_COMET_P2P_PORT\"|:$NEW_COMET_P2P_PORT\"|g" "$CONFIG_FILE"
-  sed -i -e "s|:$DEFAULT_COMET_API_PORT\"|:$NEW_COMET_API_PORT\"|g" "$CONFIG_FILE"
   sed -i -e "s|:$DEFAULT_COMET_GRPC_PORT\"|:$NEW_COMET_GRPC_PORT\"|g" "$CONFIG_FILE"
-  # Update the engine-endpoint with the new client port
+
+  # Update the app config file with the custom ports
+  sed -i -e "s|:$DEFAULT_COMET_API_PORT\"|:$NEW_COMET_API_PORT\"|g" "$APP_CONFIG_FILE"
   sed -i "s|http://localhost:$DEFAULT_GETH_CLIENT_PORT\"|http://localhost:$NEW_GETH_CLIENT_PORT\"|g" "$APP_CONFIG_FILE"
 
   echo -e "${COLOR_GREEN}Configuration updated successfully.${COLOR_RESET}"
@@ -213,6 +214,7 @@ install_story_and_geth() {
 
   change_story_dir
   story init --network $CHAIN_ID --moniker $MONIKER --home $DAEMON_HOME
+  prompt_change_port
   prepare_configuration
 }
 
@@ -311,8 +313,6 @@ Environment="PATH=$PATH"
 WantedBy=multi-user.target
 EOF
   echo -e "${COLOR_GREEN}Systemd service for Story Geth created successfully.${COLOR_RESET}"
-
-  prompt_change_port
 
   echo_new_step "Enabling and starting systemd services"
   sudo systemctl enable ${GETH_SERVICE_NAME}.service
