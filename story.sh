@@ -486,6 +486,14 @@ install_default() {
 
 apply_snapshot() {
   echo_new_step "Applying snapshot"
+  # Check if pv, lz4, and aria2 are installed, if not then install them
+  for package in pv lz4 aria2; do
+    if ! command -v $package >/dev/null; then
+      echo -e "${COLOR_YELLOW}$package is not installed. Installing...${COLOR_RESET}"
+      sudo apt-get install -y $package
+    fi
+  done
+
   read -p "Please enter the story snapshot download URL: " STORY_SNAPSHOT_URL
   if [ -z "$STORY_SNAPSHOT_URL" ]; then
     echo -e "${COLOR_RED}Snapshot URL is unavailable. Exiting.${COLOR_RESET}"
