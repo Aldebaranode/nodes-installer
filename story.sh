@@ -94,10 +94,10 @@ install_go() {
   wget https://dl.google.com/go/${GO_VERSION}.linux-amd64.tar.gz
   tar -C /usr/local -xzf ${GO_VERSION}.linux-amd64.tar.gz
   rm ${GO_VERSION}.linux-amd64.tar.gz
-  echo "export GOROOT=/usr/local/go" >>~/.bash_profile
-  echo "export GOPATH=\$HOME/go" >>~/.bash_profile
-  echo "export PATH=\$PATH:/usr/local/go/bin:\$HOME/go/bin" >>~/.bash_profile
-  source ~/.bash_profile
+  echo "export GOROOT=/usr/local/go" >>~/.profile
+  echo "export GOPATH=\$HOME/go" >>~/.profile
+  echo "export PATH=\$PATH:/usr/local/go/bin:\$HOME/go/bin" >>~/.profile
+  source ~/.profile
   echo "Go installation completed. Version: $(go version)"
 }
 
@@ -280,6 +280,7 @@ LimitNPROC=infinity
 Environment="DAEMON_NAME=$DAEMON_NAME"
 Environment="DAEMON_HOME=$DAEMON_HOME"
 Environment="UNSAFE_SKIP_BACKUP=true"
+Environment="PATH=$PATH"
 
 [Install]
 WantedBy=multi-user.target
@@ -299,6 +300,7 @@ Restart=always
 RestartSec=3
 LimitNOFILE=infinity
 LimitNPROC=infinity
+Environment="PATH=$PATH"
 
 [Install]
 WantedBy=multi-user.target
