@@ -140,7 +140,7 @@ install_using_cosmovisor() {
 update_port_in_config() {
   local default_port=$1
   local new_port=$2
-  sed -i -e "s|:$default_port\"|:$new_port\"|g" "$INSTALLATION_DIR/config.toml"
+  sed -i -e "s|:$default_port\"|:$new_port\"|g" "$DAEMON_HOME/config/config.toml"
 }
 
 prompt_change_port() {
@@ -166,7 +166,7 @@ prompt_change_port() {
 
   for port in "${!default_ports[@]}"; do
     read -p "Enter the desired ${port_descriptions[$port]} (default: ${default_ports[$port]}): " input_port
-    declare "$port=${input_port:-${default_ports[$port]}}"
+    eval "$port=${input_port:-${default_ports[$port]}}"
   done
 
   declare -A port_mappings=(
@@ -191,7 +191,7 @@ prompt_change_port() {
       sed -i -e "s|--ws.port 8546|--ws.port $ws_port|g" "$config_file"
       echo -e "${COLOR_GREEN}Update of HTTP and WebSocket ports in $(basename "$config_file") completed.${COLOR_RESET}"
     else
-      echo -e "${COLOR_RED}File $config_file not found. Skipping port configuration.${COLOR_RESET}"
+      echo -e "${COLOR_RED}File $config_file not found. Skipping port configuration on this file.${COLOR_RESET}"
     fi
   done
 
