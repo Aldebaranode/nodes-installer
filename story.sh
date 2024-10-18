@@ -101,8 +101,6 @@ install_story_and_geth() {
   [ -n "$input_moniker" ] && MONIKER="$input_moniker"
   echo -e "${COLOR_GREEN}Using moniker: ${MONIKER}${COLOR_RESET}"
   story init --network $CHAIN_ID --moniker $MONIKER
-
-  prompt_change_port
 }
 
 install_all_in_one() {
@@ -137,12 +135,6 @@ install_using_cosmovisor() {
   DAEMON_NAME=$DAEMON_NAME DAEMON_HOME=$DAEMON_HOME cosmovisor init "$(which story)"
 }
 
-update_port_in_config() {
-  local default_port=$1
-  local new_port=$2
-  sed -i -e "s|:$default_port\"|:$new_port\"|g" "$DAEMON_HOME/config/config.toml"
-}
-
 prompt_change_port() {
   echo_new_step "Configuring custom ports"
 
@@ -165,7 +157,16 @@ prompt_change_port() {
   )
 
   for port in "${!default_ports[@]}"; do
-    read -p "Enter the desired ${port_descriptions[$port]} (default: ${default_ports[$port]}): " input_port
+    while true; do
+      read -p "Enter the desired ${port_descriptions[$port]} (default: ${default_ports[$port]}): " input_port
+      input_port=${input_port:-${default_ports[$port]}}
+      if ! lsof -i :"$input_port" >/dev/null; then
+        eval "$port=$input_port"
+        break
+      else
+        echo -e "${COLOR_RED}Port $input_port is already in use. Please choose a different port.${COLOR_RESET}"
+      fi
+    done
     eval "$port=${input_port:-${default_ports[$port]}}"
   done
 
@@ -177,7 +178,7 @@ prompt_change_port() {
   )
 
   for key in "${!port_mappings[@]}"; do
-    update_port_in_config "$key" "${port_mappings[$key]}"
+    sed -i -e "s|:$key\"|:${port_mappings[$key]}\"|g" "$DAEMON_HOME/config/config.toml"
   done
 
   config_files=(
