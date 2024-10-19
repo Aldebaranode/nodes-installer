@@ -201,7 +201,6 @@ prepare_configuration() {
   echo -e "${COLOR_GREEN}Configuration updated successfully.${COLOR_RESET}"
 }
 
-
 install_story_and_geth() {
   echo_new_step "Installing story & geth"
   download_story
@@ -279,7 +278,7 @@ After=network-online.target
 User=$USER
 Type=simple
 WorkingDirectory=${DAEMON_HOME}
-ExecStart=$(which cosmovisor) run run
+ExecStart=$(which cosmovisor) run run --home ${DAEMON_HOME}
 Restart=on-failure
 RestartSec=3
 LimitNOFILE=infinity
@@ -353,7 +352,7 @@ module.exports = {
     {
       name: "${STORY_SERVICE_NAME}",         
       script: cosmovisorPath,               
-      args: "run run",                     
+      args: "run run --home ${DAEMON_HOME}",                     
       cwd: "${DAEMON_HOME}",
       env: {
         DAEMON_NAME: "${DAEMON_NAME}",                
@@ -455,7 +454,6 @@ start_services() {
   fi
   echo -e "${COLOR_GREEN}Services started successfully.${COLOR_RESET}"
 }
-
 
 extract_snapshot() {
   echo_new_step "Extracting snapshot"
