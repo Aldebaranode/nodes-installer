@@ -257,6 +257,25 @@ prompt_service_name() {
   GETH_SERVICE_NAME=${input_geth_service_name:-$GETH_SERVICE_NAME}
 }
 
+build_geth_args() {
+  local args=(
+    "--iliad"
+    "--syncmode full"
+    "--http"
+    "--http.addr 0.0.0.0"
+    "--http.port $NEW_GETH_HTTP_PORT"
+    "--ws"
+    "--ws.addr 0.0.0.0"
+    "--ws.port $NEW_GETH_WS_PORT"
+    "--http.vhosts=*"
+    "--datadir $STORY_DIR/geth/iliad"
+    "--port $NEW_GETH_P2P_PORT"
+    "--discovery.port $NEW_GETH_P2P_PORT"
+    "--authrpc.port $NEW_GETH_CLIENT_PORT"
+  )
+  echo "${args[@]}"
+}
+
 create_story_service() {
   echo_new_step "Creating systemd service for Story Node"
   command -v story >/dev/null || {
@@ -301,7 +320,7 @@ After=network-online.target
 
 [Service]
 User=$USER
-ExecStart=$(which story-geth) --iliad --syncmode full --http --http.addr 0.0.0.0 --http.port $NEW_GETH_HTTP_PORT --ws --ws.addr 0.0.0.0 --ws.port $NEW_GETH_WS_PORT --http.vhosts=* --datadir $STORY_DIR/geth/iliad --port $NEW_GETH_P2P_PORT --discovery.port $NEW_GETH_P2P_PORT
+ExecStart=$(which story-geth) $(build_geth_args)
 Restart=always
 RestartSec=3
 LimitNOFILE=infinity
@@ -371,7 +390,7 @@ module.exports = {
     {
       name: "${GETH_SERVICE_NAME}",         
       script: gethPath,                
-      args: "--iliad --syncmode full --http --http.addr 0.0.0.0 --http.port $NEW_GETH_HTTP_PORT --ws --ws.addr 0.0.0.0 --ws.port $NEW_GETH_WS_PORT --http.vhosts=* --datadir $STORY_DIR/geth/iliad --port $NEW_GETH_P2P_PORT --discovery.port $NEW_GETH_P2P_PORT",                     
+      args: "$(build_geth_args)",
       cwd: "${STORY_DIR}/geth",  
       env: {
         PATH: process.env.PATH              
