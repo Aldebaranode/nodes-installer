@@ -87,6 +87,7 @@ download_story() {
   tar -xzvf "${STORY_NAME}.tar.gz"
   sudo chmod +x "${STORY_NAME}/story"
   sudo mv "${STORY_NAME}/story" /usr/local/bin/
+  rm "${STORY_NAME}.tar.gz"
 }
 
 download_geth() {
@@ -120,7 +121,7 @@ validate_port() {
   return 1
 }
 
-change_story_dir() {
+prompt_story_dir() {
   echo_new_step "Changing story directory"
   read -p "Enter the new directory for your story installation (current: ${STORY_DIR}): " new_story_dir
   new_story_dir=$(eval echo "$new_story_dir")  # Expand variables like $HOME to their actual values
@@ -217,7 +218,7 @@ install_story_and_geth() {
   [ -n "$input_moniker" ] && MONIKER="$input_moniker"
   echo -e "${COLOR_GREEN}Using moniker: ${MONIKER}${COLOR_RESET}"
 
-  change_story_dir
+  prompt_story_dir
   story init --network $CHAIN_ID --moniker $MONIKER --home $DAEMON_HOME
   prompt_change_port
   prepare_configuration
@@ -542,6 +543,7 @@ apply_snapshot() {
   echo -e "Downloading snapshots simultaneously from ${COLOR_BLUE}${STORY_GETH_SNAPSHOT_URL}${COLOR_RESET} and ${COLOR_BLUE}${STORY_SNAPSHOT_URL}${COLOR_RESET}"
   (echo $STORY_SNAPSHOT_URL; echo $STORY_GETH_SNAPSHOT_URL) | aria2c -x 16 -s 16 -k 1M -i -
 
+  prompt_story_dir
   prompt_service_name
 
   stop_services
