@@ -103,13 +103,21 @@ download_geth() {
 }
 
 # Function to check if a port is in use
-is_port_in_use() {
+validate_port() {
   local port=$1
-  if lsof -i:$port >/dev/null; then
+  if [[ $port -lt 1 || $port -gt 65535 ]]; then
+    echo -e "${COLOR_RED}Port $port is out of the valid range (1-65535).${COLOR_RESET}"
     return 0
-  else
-    return 1
   fi
+  if lsof -i:$port >/dev/null; then
+    echo -e "${COLOR_RED}Port $input_port is already in use. Please choose a different port.${COLOR_RESET}"
+    return 0
+  fi
+  if [[ ! "$port" =~ ^[0-9]+$ ]]; then
+    echo -e "${COLOR_RED}Port $port is not a valid number.${COLOR_RESET}"
+    return 0
+  fi
+  return 1
 }
 
 change_story_dir() {
@@ -149,11 +157,9 @@ prompt_change_port() {
     while true; do
       read -p "Enter the desired $port_description (default: ${ports[$port_description]}): " input_port
       input_port=${input_port:-${ports[$port_description]}}
-      if ! is_port_in_use "$input_port"; then
+      if ! validate_port "$input_port"; then
         ports[$port_description]=$input_port
         break
-      else
-        echo -e "${COLOR_RED}Port $input_port is already in use. Please choose a different port.${COLOR_RESET}"
       fi
     done
   done
