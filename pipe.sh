@@ -145,24 +145,25 @@ enable_and_start_service() {
 
 echo_manually_steps() {
     echo "Next steps:"
-    echo "1. Verify that the dcdnd service is running correctly by checking the logs:"
-    echo "   sudo journalctl -u dcdnd --no-pager"
-    echo "2. If there are any issues, check the configuration files and ensure all environment variables are set correctly."
-    echo "3. Once the service is running, you can proceed to the registration steps using the command below"
-
-    echo "4. To log in to the pipe tool, use the following command:"
+    echo "1. To log in to the pipe tool, use the following command:"
     echo "${SERVICE_DIR}/pipe-tool login --node-registry-url=\"${REGISTRY_URL}\" --credentials-dir=\"${PERMISSIONLESS_DIR}\""
 
-    echo "5. Generate a registration token, use the following command:"
+    echo "2. Generate a registration token, use the following command:"
     echo "${SERVICE_DIR}/pipe-tool generate-registration-token --node-registry-url=\"${REGISTRY_URL}\" --credentials-dir=\"${PERMISSIONLESS_DIR}\""
 
-    echo "6. Generate a wallet, use the following command:"
+    echo "3. Generate a wallet, use the following command:"
     echo "${SERVICE_DIR}/pipe-tool generate-wallet --node-registry-url=\"${REGISTRY_URL}\" --credentials-dir=\"${PERMISSIONLESS_DIR}\" --key-path=\"${PERMISSIONLESS_DIR}\""
 
-    echo "7. Link a wallet to your node, use the following command:"
+    echo "4. Link a wallet to your node, use the following command:"
     echo "${SERVICE_DIR}/pipe-tool link-wallet --node-registry-url=\"${REGISTRY_URL}\" --credentials-dir=\"${PERMISSIONLESS_DIR}\" --key-path=\"${PERMISSIONLESS_DIR}\""
 
-    echo "8. List all nodes registered, use the following command:"
+    echo "5. To restart the service, use the following command:"
+    echo "sudo systemctl restart dcdnd"
+
+    echo "6. To check the status of the service, use the following command:"
+    echo "sudo systemctl status dcdnd --no-pager"
+
+    echo "7. List all nodes registered, use the following command:"
     echo "${SERVICE_DIR}/pipe-tool list-nodes --node-registry-url=\"${REGISTRY_URL}\" --credentials-dir=\"${PERMISSIONLESS_DIR}\""
 }
 
